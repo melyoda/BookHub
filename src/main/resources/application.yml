@@ -18,7 +18,7 @@
       database: postgresql
       database-platform: org.hibernate.dialect.PostgreSQLDialect
   jwt:
-    secret: 1a5sd6sfd6s51df561dgfdg5d1fbvdg
+    secret: 1a5sd6sfd6s51df561dgfdg5d1fbvdgdi2o3h834h8r34h78fh48hfuh4fih34u832d
 
 
 

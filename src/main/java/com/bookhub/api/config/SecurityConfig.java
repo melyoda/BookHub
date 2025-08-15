@@ -1,25 +1,21 @@
 package com.bookhub.api.config;
 
 
-import com.bookhub.api.model.User;
-import com.bookhub.api.repository.UserRepository;
+
 import com.bookhub.api.service.MyUserDetailsService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -34,7 +30,6 @@ public class SecurityConfig {
     private final AuthenticationConfiguration authConfig;
 
 //    private final UserRepository userRepository;
-    @Autowired
     private MyUserDetailsService myUserDetailsService;
 
 
@@ -53,52 +48,24 @@ public class SecurityConfig {
                  .build();
     }
 
-//    @Bean
-//    public AuthenticationManager authenticationManager() throws Exception {
-//        return authConfig.getAuthenticationManager();
-//    }
-
-//    @Bean
-//    public UserDetailsService userDetailsService() {
-//        return username -> {
-//            // Find the user from your database
-//            com.bookhub.api.model.User user = userRepository.findByEmail(username)
-//                    .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-//
-//            // Create a UserDetails object from your custom User entity
-//            return (org.springframework.security.core.userdetails.UserDetails) User
-//                    .builder()
-//                    .username(user.getEmail())
-//                    .password(user.getPassword())
-//                    .role(user.getRole()) // Or get roles from your User entity
-//                    .build();
-//        };
-//    }
-
-    /*
-     * Authentication provider configuration
-     * Links UserDetailsService and PasswordEncoder
-     */
     @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(myUserDetailsService);
-
-        provider.setPasswordEncoder(passwordEncoder());
-
-        return provider;
+    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+        return authentication -> {
+            UserDetails user = userDetailsService.loadUserByUsername(authentication.getName());
+            if (!passwordEncoder.matches(authentication.getCredentials().toString(), user.getPassword())) {
+                throw new BadCredentialsException("Invalid password");
+            }
+            return new UsernamePasswordAuthenticationToken(
+                    user,
+                    user.getPassword(),
+                    user.getAuthorities()
+            );
+        };
     }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(); // Don't use NoOp in production
-    }
-    /*
-     * Authentication manager bean
-     * Required for programmatic authentication (e.g., in /generateToken)
-     */
-    @Bean
-   public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-       return config.getAuthenticationManager();
     }
 
 }

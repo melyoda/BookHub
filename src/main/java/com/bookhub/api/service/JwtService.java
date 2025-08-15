@@ -2,23 +2,15 @@ package com.bookhub.api.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.security.Key;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.time.Instant;
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
 @Service
@@ -31,30 +23,28 @@ public class JwtService {
         this.SECRET_KEY = secretKey;
     }
 
-//    private String SECRET_KEY = "";
 
-//    public JwtService() {
-//        try{
-//            KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
-//            SecretKey key = keyGenerator.generateKey();
-//            SECRET_KEY = Base64.getEncoder().encodeToString(key.getEncoded());
-//        } catch (NoSuchAlgorithmException e) {
-//            throw new RuntimeException(e);
-//        }
+//    public String generateToken(String username) {
+//        Map<String, Object> claims = new HashMap<>();
+//        return Jwts.builder()
+//                .claims()
+//                .add(claims)
+//                .subject(username)
+//                .issuedAt(new Date(System.currentTimeMillis()))
+//                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 30))
+//                .and()
+//                .signWith(getKey())
+//                .compact();
 //    }
-
-    public String generateToken(String username) {
-        Map<String, Object> claims = new HashMap<>();
-        return Jwts.builder()
-                .claims()
-                .add(claims)
-                .subject(username)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 30))
-                .and()
-                .signWith(getKey())
-                .compact();
-    }
+public String generateToken(String username) {
+    return Jwts.builder()
+            .claims(new HashMap<>())  // New fluent API
+            .subject(username)
+            .issuedAt(new Date(System.currentTimeMillis()))
+            .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 30))
+            .signWith(getKey(), Jwts.SIG.HS256)  // New type-safe algorithm reference
+            .compact();
+}
 
     private SecretKey getKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
@@ -87,15 +77,12 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getKey()) // Not verifyWith – that's for asymmetric keys like RSA
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-//          return null;
-    }
-
-
-
+//    private Claims extractAllClaims(String token) {
+//        return Jwts.parser()
+//                .verifyWith(getKey()) // Not verifyWith – that's for asymmetric keys like RSA
+//                .build()
+//                .parseSignedClaims(token)
+//                .getPayload();
+////          return null;
+//    }
 }

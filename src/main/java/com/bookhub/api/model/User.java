@@ -35,10 +35,13 @@ public class User {
     @Column(nullable = false)
     private String lastName;
 
-    private String username = firstName + " " + lastName ;
-
     @Enumerated(EnumType.STRING)
     private Role role;
+
+
+    public String getUsername() {
+        return firstName + " " + lastName;
+    }
 
     /**
      *
@@ -49,7 +52,7 @@ public class User {
     public String toString() {
         return "Users{" +
                 "id=" + id +
-                ", username='" + username + '\'' +
+                ", username='" + getUsername() + '\'' +
                 ", password='" + password + '\'' +
                 '}';
     }
