@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 // JpaRepository<User, Long> gives us all standard CRUD methods for the User entity,
 // which has a primary key of type Long.
-public interface UserRepository extends JpaRepository<User, Integer> {
+public interface UserRepository extends JpaRepository<User, Long> {
 
     // Spring Data JPA can automatically create queries from method names.
     // This method will generate a query to find a User by their email address.

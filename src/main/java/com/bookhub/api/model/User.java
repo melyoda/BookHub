@@ -2,13 +2,6 @@ package com.bookhub.api.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.List;
 
 // @Entity marks this class as a JPA entity, meaning it will be mapped to a database table.
 @Data
@@ -18,7 +11,7 @@ import java.util.List;
 @Entity
 // @Table specifies the name of the database table. If omitted, the class name is used.
 @Table(name = "_user")
-public class User implements UserDetails{
+public class User {
 
     // @Id marks this field as the primary key for the table.
     @Id
@@ -42,36 +35,23 @@ public class User implements UserDetails{
     @Column(nullable = false)
     private String lastName;
 
+    private String username = firstName + " " + lastName ;
+
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    /**
+     *
+     * @return String, user info.
+     * TODO: change later to not show sensitive stuff
+     */
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
+    public String toString() {
+        return "Users{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                '}';
     }
 
-    @Override
-    public String getUsername() {
-        return email;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
 }

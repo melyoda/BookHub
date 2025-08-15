@@ -1,6 +1,7 @@
 package com.bookhub.api.config;
 
 
+import com.bookhub.api.model.User;
 import com.bookhub.api.repository.UserRepository;
 import com.bookhub.api.service.MyUserDetailsService;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +33,10 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter; // You’ll create this filter later
     private final AuthenticationConfiguration authConfig;
 
-    private final UserRepository userRepository;
-
+//    private final UserRepository userRepository;
     @Autowired
     private MyUserDetailsService myUserDetailsService;
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -43,37 +44,61 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // ✅ disable CSRF for stateless JWT
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // allow login/register
-                        .anyRequest()./*authenticated()*/permitAll() // protect other endpoints
+                        .anyRequest().authenticated()/*permitAll()*/ // protect other endpoints
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class) // 🛡️ JWT filter
+                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class) // 🛡️ JWT filter
                  .build();
     }
 
-    @Bean
-    public AuthenticationManager authenticationManager() throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
+//    @Bean
+//    public AuthenticationManager authenticationManager() throws Exception {
+//        return authConfig.getAuthenticationManager();
+//    }
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-    }
+//    @Bean
+//    public UserDetailsService userDetailsService() {
+//        return username -> {
+//            // Find the user from your database
+//            com.bookhub.api.model.User user = userRepository.findByEmail(username)
+//                    .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+//
+//            // Create a UserDetails object from your custom User entity
+//            return (org.springframework.security.core.userdetails.UserDetails) User
+//                    .builder()
+//                    .username(user.getEmail())
+//                    .password(user.getPassword())
+//                    .role(user.getRole()) // Or get roles from your User entity
+//                    .build();
+//        };
+//    }
 
-
+    /*
+     * Authentication provider configuration
+     * Links UserDetailsService and PasswordEncoder
+     */
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(myUserDetailsService);
-        provider.setPasswordEncoder(passwordEncoder()); // e.g., BCryptPasswordEncoder
+
+        provider.setPasswordEncoder(passwordEncoder());
+
         return provider;
     }
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(); // Don't use NoOp in production
     }
+    /*
+     * Authentication manager bean
+     * Required for programmatic authentication (e.g., in /generateToken)
+     */
+    @Bean
+   public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+       return config.getAuthenticationManager();
+    }
+
 }
