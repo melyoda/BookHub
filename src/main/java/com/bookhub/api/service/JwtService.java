@@ -9,6 +9,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Function;
@@ -23,19 +25,9 @@ public class JwtService {
         this.SECRET_KEY = secretKey;
     }
 
-
-//    public String generateToken(String username) {
-//        Map<String, Object> claims = new HashMap<>();
-//        return Jwts.builder()
-//                .claims()
-//                .add(claims)
-//                .subject(username)
-//                .issuedAt(new Date(System.currentTimeMillis()))
-//                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 30))
-//                .and()
-//                .signWith(getKey())
-//                .compact();
-//    }
+    @Value("${jwt.expiration}")
+    private Duration jwtExpiration;
+   /*
 public String generateToken(String username) {
     return Jwts.builder()
             .claims(new HashMap<>())  // New fluent API
@@ -45,6 +37,18 @@ public String generateToken(String username) {
             .signWith(getKey(), Jwts.SIG.HS256)  // New type-safe algorithm reference
             .compact();
 }
+*/
+   public String generateToken(String username) {
+       Instant now = Instant.now(); // ← Same timestamp for consistency
+
+       return Jwts.builder()
+               .claims(new HashMap<>())
+               .subject(username)
+               .issuedAt(Date.from(now))
+               .expiration(Date.from(now.plus(jwtExpiration))) // ← Consistent timing
+               .signWith(getKey(), Jwts.SIG.HS256)
+               .compact();
+   }
 
     private SecretKey getKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);

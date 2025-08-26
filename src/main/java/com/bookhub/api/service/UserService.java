@@ -2,6 +2,7 @@ package com.bookhub.api.service;
 
 import com.bookhub.api.dto.LoginRequestDTO;
 import com.bookhub.api.dto.RegisterRequestDTO;
+import com.bookhub.api.exception.UserAlreadyExistsException;
 import com.bookhub.api.model.Role;
 import com.bookhub.api.model.User;
 import com.bookhub.api.repository.UserRepository;
@@ -28,6 +29,10 @@ public class UserService {
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
     public String register(RegisterRequestDTO registerRequest) {
+        if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) {
+            throw new IllegalArgumentException("Passwords do not match");
+        }
+
         User user = User.builder()
                 .firstName(registerRequest.getFirstName())
                 .lastName(registerRequest.getLastName())
@@ -36,9 +41,17 @@ public class UserService {
                 .role(Role.USER) //
                 .build();
 
-        userRepo.save(user);
-        return jwtService.generateToken(user.getEmail());
-    }
+        if (userRepo.findByEmail(user.getEmail()).isPresent()) {
+            throw new UserAlreadyExistsException("User with this email already exists");
+        }
+
+        try {
+            userRepo.save(user);
+//            activityService.logActivity(user.getId(), ActivityType.USER_CREATED, "", "Creation of User: "+ user.getFirstName()+" "+ user.getLastName());
+        } catch (Exception e) {
+            throw new RuntimeException("Internal server error: "+ e.getMessage());
+        }
+        return jwtService.generateToken(user.getEmail());}
 
 
     // This method returns the token or throws an exception if authentication fails

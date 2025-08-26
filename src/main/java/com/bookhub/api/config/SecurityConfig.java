@@ -38,8 +38,13 @@ public class SecurityConfig {
          return http
                 .csrf(AbstractHttpConfigurer::disable) // ✅ disable CSRF for stateless JWT
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // allow login/register
-                        .anyRequest().authenticated()/*permitAll()*/ // protect other endpoints
+                        .requestMatchers("/api/auth/**").permitAll()// allow login/register
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**"
+                        ).permitAll()
+                        .anyRequest().authenticated() // protect other endpoints
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
