@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("api/auth")
 public class UserController {
 
-
     private final UserService service;
 
     public UserController(UserService service) {

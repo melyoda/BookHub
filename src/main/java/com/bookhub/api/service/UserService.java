@@ -29,9 +29,9 @@ public class UserService {
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
     public String register(RegisterRequestDTO registerRequest) {
-        if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) {
-            throw new IllegalArgumentException("Passwords do not match");
-        }
+//        if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) {
+//            throw new IllegalArgumentException("Passwords do not match");
+//        }
 
         User user = User.builder()
                 .firstName(registerRequest.getFirstName())
