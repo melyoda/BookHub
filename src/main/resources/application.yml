@@ -6,7 +6,9 @@
     data:
       mongodb:
         uri: ${MONGODB_URI}
-
+#  jwt:
+#    secret: "ET2VTlBAAT603eAEFzWb1wru9y3vDh+P8bqm1uNE19QL1U9B"
+#    expiration: 7d
   jwt:
     secret: ${JWT_SECRET}
     expiration: ${JWT_EXPIRATION:7d}
