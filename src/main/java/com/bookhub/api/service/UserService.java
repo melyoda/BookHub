@@ -8,15 +8,18 @@ import com.bookhub.api.exception.UserAlreadyExistsException;
 import com.bookhub.api.model.Role;
 import com.bookhub.api.model.User;
 import com.bookhub.api.repository.UserRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@AllArgsConstructor
 public class UserService {
 
     @Autowired
@@ -28,7 +31,9 @@ public class UserService {
     @Autowired
     private UserRepository userRepo;
 
-    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
+    private final PasswordEncoder encoder;
+
+//    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
     public LoginResponseDTO register(RegisterRequestDTO registerRequest) {
 

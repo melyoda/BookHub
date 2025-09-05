@@ -53,19 +53,23 @@ public class SecurityConfig {
                  .build();
     }
 
+//    @Bean
+//    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+//        return authentication -> {
+//            UserDetails user = userDetailsService.loadUserByUsername(authentication.getName());
+//            if (!passwordEncoder.matches(authentication.getCredentials().toString(), user.getPassword())) {
+//                throw new BadCredentialsException("Invalid password");
+//            }
+//            return new UsernamePasswordAuthenticationToken(
+//                    user,
+//                    user.getPassword(),
+//                    user.getAuthorities()
+//            );
+//        };
+//    }
     @Bean
-    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
-        return authentication -> {
-            UserDetails user = userDetailsService.loadUserByUsername(authentication.getName());
-            if (!passwordEncoder.matches(authentication.getCredentials().toString(), user.getPassword())) {
-                throw new BadCredentialsException("Invalid password");
-            }
-            return new UsernamePasswordAuthenticationToken(
-                    user,
-                    user.getPassword(),
-                    user.getAuthorities()
-            );
-        };
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
     @Bean
