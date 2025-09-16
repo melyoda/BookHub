@@ -26,11 +26,11 @@ public class Book {
 
     private String description;
 
-    private String bookUrl;
+    private String bookFileUrl;
 
     private String coverImageUrl;
 
-    private String category;
+    private List<String> categoryIds;
 
     private String isbn;
 
@@ -40,5 +40,9 @@ public class Book {
 
     private String addedBy;
 
-    private List<String> relatedBooks;
+    private LocalDateTime updatedOn;
+
+    private String updatedBy;
+
+    private List<String> relatedBooks; // later will add a list of books ids related to this books
 }
