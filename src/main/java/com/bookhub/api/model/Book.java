@@ -26,7 +26,7 @@ public class Book {
 
     private String description;
 
-    private String bookFileUrl;
+    private List<Resource> bookFileUrl;
 
     private String coverImageUrl;
 

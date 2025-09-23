@@ -1,61 +1,108 @@
 package com.bookhub.api.utils;
 
 import com.bookhub.api.exception.FileUploadException;
+import com.bookhub.api.exception.ValidationException;
 import com.bookhub.api.model.ResourceType;
 import com.bookhub.api.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class StoreResources {
 
     private final CloudinaryService cloudinaryService;
 
-    private static final long MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB in bytes
-    private static final long MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB in bytes
+    // Size limits for your eBook app
+    private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB for covers
+    private static final long MAX_EBOOK_SIZE = 50 * 1024 * 1024; // 50MB for eBooks
+    private static final long MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB for other docs
 
-    public String saveFiles(MultipartFile file) {
+    // Supported formats
+    private static final Set<String> SUPPORTED_IMAGES = Set.of("jpg", "jpeg", "png", "webp");
+    private static final Set<String> SUPPORTED_EBOOKS = Set.of("pdf", "epub", "mobi");
+    private static final Set<String> SUPPORTED_DOCUMENTS = Set.of("doc", "docx", "txt");
+
+    public String saveFile(MultipartFile file) {
         try {
+            validateFile(file);
             ResourceType type = determineResourceType(file.getOriginalFilename());
+            checkFileSize(file, type);
+
             return cloudinaryService.uploadFile(file, type);
         } catch (IOException e) {
-//            e.printStackTrace();
-            throw new FileUploadException("File upload to Cloudinary failed for " + file.getOriginalFilename() + " " + e.getMessage());
+            log.error("File upload failed: {}", file.getOriginalFilename(), e);
+            throw new FileUploadException("File upload failed: " + e.getMessage());
         }
     }
 
-    // TODO: fix this later to see types of pdfs and stuff like that
     public ResourceType determineResourceType(String filename) {
-        if (filename == null) return ResourceType.PDF;
+        if (filename == null) {
+            throw new ValidationException("Filename cannot be null");
+        }
 
-        String lowerFilename = filename.toLowerCase();
+        String extension = getFileExtension(filename).toLowerCase();
 
-//        if (lowerFilename.endsWith(".mp4") || lowerFilename.endsWith(".mov") ||
-//                lowerFilename.endsWith(".avi") || lowerFilename.endsWith(".webm")) {
-//            return ResourceType.VIDEO;
-//        }
-        if (lowerFilename.endsWith(".jpg") || lowerFilename.endsWith(".jpeg") ||
-                lowerFilename.endsWith(".png") || lowerFilename.endsWith(".gif") ||
-                lowerFilename.endsWith(".webp") || lowerFilename.endsWith(".bmp")) {
+        if (SUPPORTED_IMAGES.contains(extension)) {
             return ResourceType.IMAGE;
+        } else if (SUPPORTED_EBOOKS.contains(extension)) {
+            return ResourceType.EBOOK;
+        } else if (SUPPORTED_DOCUMENTS.contains(extension)) {
+            return ResourceType.DOCUMENT;
+        } else {
+            throw new ValidationException("Unsupported file type: " + extension);
         }
-        if (lowerFilename.endsWith(".pdf") || lowerFilename.endsWith(".doc") ||
-                lowerFilename.endsWith(".docx") || lowerFilename.endsWith(".txt")) {
-            return ResourceType.RAW;
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ValidationException("File cannot be empty");
         }
-        return ResourceType.RAW; // default
+
+        if (file.getOriginalFilename() == null || file.getOriginalFilename().trim().isEmpty()) {
+            throw new ValidationException("Filename cannot be empty");
+        }
     }
 
     private void checkFileSize(MultipartFile file, ResourceType type) {
         long size = file.getSize();
-        if ((type == ResourceType.IMAGE && size > MAX_IMAGE_SIZE) ||
-                (type == ResourceType.RAW && size > MAX_VIDEO_SIZE)) {
-            throw new FileUploadException("File exceeds maximum allowed size for " + type +
-                    ". File size: " + size + " bytes");
+
+        switch (type) {
+            case IMAGE:
+                if (size > MAX_IMAGE_SIZE) {
+                    throw new ValidationException(
+                            String.format("Image size exceeds %dMB limit", MAX_IMAGE_SIZE / (1024 * 1024))
+                    );
+                }
+                break;
+            case EBOOK:
+                if (size > MAX_EBOOK_SIZE) {
+                    throw new ValidationException(
+                            String.format("eBook size exceeds %dMB limit", MAX_EBOOK_SIZE / (1024 * 1024))
+                    );
+                }
+                break;
+            case DOCUMENT:
+                if (size > MAX_DOCUMENT_SIZE) {
+                    throw new ValidationException(
+                            String.format("Document size exceeds %dMB limit", MAX_DOCUMENT_SIZE / (1024 * 1024))
+                    );
+                }
+                break;
         }
+    }
+
+    private String getFileExtension(String filename) {
+        int lastDotIndex = filename.lastIndexOf('.');
+        if (lastDotIndex > 0 && lastDotIndex < filename.length() - 1) {
+            return filename.substring(lastDotIndex + 1).toLowerCase();
+        }
+        throw new ValidationException("Invalid filename: " + filename);
     }
 }

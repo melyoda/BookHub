@@ -1,23 +1,18 @@
 package com.bookhub.api.controller;
 
-import com.bookhub.api.dto.ApiResponse;
-import com.bookhub.api.dto.LoginRequestDTO;
-import com.bookhub.api.dto.LoginResponseDTO;
-import com.bookhub.api.dto.RegisterRequestDTO;
-import com.bookhub.api.exception.UserAlreadyExistsException;
+import com.bookhub.api.dto.*;
 import com.bookhub.api.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("api/auth")
-public class UserController {
+@RequestMapping("api/v1/auth")
+public class AuthController {
 
     private final UserService service;
 
-    public UserController(UserService service) {
+    public AuthController(UserService service) {
         this.service = service;
     }
 
@@ -32,18 +27,6 @@ public class UserController {
                     .data(loginResponse)
                     .build();
             return new ResponseEntity<>(response, HttpStatus.CREATED);
-        } catch (IllegalArgumentException e) {
-            ApiResponse<LoginResponseDTO> errorResponse = ApiResponse.<LoginResponseDTO>builder()
-                    .status(HttpStatus.BAD_REQUEST)
-                    .message(e.getMessage())
-                    .build();
-            return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-        } catch (UserAlreadyExistsException e) {
-            ApiResponse<LoginResponseDTO> errorResponse = ApiResponse.<LoginResponseDTO>builder()
-                    .status(HttpStatus.CONFLICT)
-                    .message(e.getMessage())
-                    .build();
-            return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
         } catch (Exception e) {
             ApiResponse<LoginResponseDTO> errorResponse = ApiResponse.<LoginResponseDTO>builder()
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -63,12 +46,6 @@ public class UserController {
                     .data(loginResponse)
                     .build();
             return ResponseEntity.ok(response);
-        }catch (BadCredentialsException e) {
-            ApiResponse<LoginResponseDTO> errorResponse = ApiResponse.<LoginResponseDTO>builder()
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .message("Invalid email or password")
-                    .build();
-            return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
             ApiResponse<LoginResponseDTO> errorResponse = ApiResponse.<LoginResponseDTO>builder()
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -78,4 +55,16 @@ public class UserController {
         }
     }
 
+    @PostMapping("refresh")
+    public ResponseEntity<ApiResponse<RefreshTokenResponseDTO>> refreshToken(
+            @RequestBody RefreshTokenRequestDTO refreshRequest) {
+        RefreshTokenResponseDTO tokenResponse = service.refreshToken(refreshRequest.getRefreshToken());
+
+        ApiResponse<RefreshTokenResponseDTO> response = ApiResponse.<RefreshTokenResponseDTO>builder()
+                .status(HttpStatus.OK)
+                .message("Login successful")
+                .data(tokenResponse)
+                .build();
+        return ResponseEntity.ok(response);
+    }
 }

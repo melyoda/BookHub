@@ -6,10 +6,15 @@
     data:
       mongodb:
         uri: ${MONGODB_URI}
+    servlet:
+      multipart:
+        max-request-size: 50MB
+        max-file-size: 50MB
 
   jwt:
     secret: ${JWT_SECRET}
-    expiration: ${JWT_EXPIRATION:7d}
+    access-token-expiration: ${JWT_ACCESS_EXPIRATION:1h}
+    refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:30d}
 
   cloudinary:
     url: ${CLOUDINARY_CLOUD_URL}

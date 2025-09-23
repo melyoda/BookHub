@@ -24,4 +24,9 @@ public interface BookRepository extends MongoRepository<Book, String> {
     List<Book> findByAuthorContainingIgnoreCase(String authorName);
 
     Page<Book> findByCategoryIdsContaining(String categoryId, Pageable pageable);
+
+
+    //I think this is wrongly made it should be a custom query based on which are present
+    //soooooooooooooooo again TODO: fix this and make it a good boi
+    Page<Book> findComplex(String query, String categoryId, String sort, Pageable pageable);
 }

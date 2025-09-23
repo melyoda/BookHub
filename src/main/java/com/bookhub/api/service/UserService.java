@@ -1,9 +1,8 @@
 package com.bookhub.api.service;
 
-import com.bookhub.api.dto.LoginRequestDTO;
-import com.bookhub.api.dto.LoginResponseDTO;
-import com.bookhub.api.dto.RegisterRequestDTO;
-import com.bookhub.api.dto.UserAccountDTO;
+import com.bookhub.api.dto.*;
+import com.bookhub.api.exception.InvalidTokenException;
+import com.bookhub.api.exception.ResourceNotFoundException;
 import com.bookhub.api.exception.UserAlreadyExistsException;
 import com.bookhub.api.model.Role;
 import com.bookhub.api.model.User;
@@ -55,13 +54,18 @@ public class UserService {
             throw new RuntimeException("Internal server error: "+ e.getMessage());
         }
 //        return jwtService.generateToken(user.getEmail());
-        String token = jwtService.generateToken(user.getEmail());
+        String accessToken = jwtService.generateAccessToken(user.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+
         UserAccountDTO userAccountDTO = convertToUserAccountDTO(user);
 
-        return new LoginResponseDTO(token, userAccountDTO);
+        return LoginResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(userAccountDTO)
+                .build();
 
     }
-
 
     // This method returns the token or throws an exception if authentication fails
     public LoginResponseDTO login(LoginRequestDTO loginRequest) {
@@ -74,14 +78,45 @@ public class UserService {
             User user = userRepo.findByEmail(loginRequest.getEmail())
                     .orElseThrow(() -> new BadCredentialsException("User not found"));
 
+            if (!encoder.matches(loginRequest.getPassword(), user.getPassword())) {
+                throw new BadCredentialsException("Invalid credentials");
+            }
+
             // Generate token and convert user to DTO
-            String token = jwtService.generateToken(loginRequest.getEmail());
+            String accessToken = jwtService.generateAccessToken(user.getEmail());
+            String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+
             UserAccountDTO userAccountDTO = convertToUserAccountDTO(user);
 
-            return new LoginResponseDTO(token, userAccountDTO);
+            return LoginResponseDTO.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .user(userAccountDTO)
+                    .build();
         }
         // This part is technically unreachable if auth fails, as it throws an exception first
         throw new BadCredentialsException("Invalid username or password");
+    }
+
+    public RefreshTokenResponseDTO refreshToken(String refreshToken) {
+        // Validate the refresh token
+        if (!jwtService.validateToken(refreshToken)) {
+            throw new InvalidTokenException("Invalid or expired refresh token");
+        }
+
+        // Extract username and generate new access token
+        String userEmail = jwtService.extractUsername(refreshToken);
+        User user = userRepo.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        String newAccessToken = jwtService.generateAccessToken(userEmail);
+        UserAccountDTO userDTO = convertToUserAccountDTO(user);
+
+        return RefreshTokenResponseDTO.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken) // Return same refresh token
+                .user(userDTO)
+                .build();
     }
 
     private UserAccountDTO convertToUserAccountDTO(User user) {

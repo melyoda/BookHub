@@ -6,10 +6,10 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.Optional;
 
 public interface CategoryRepository extends MongoRepository<Categories, String> {
-
-    /**
-     * Finds a category by its unique name.
-     * This will be useful for admin panels or when creating books.
-     */
     Optional<Categories> findByName(String name);
+    Optional<Categories> findByNameIgnoreCase(String name);
+
+    // Check if category exists by name (for validation)
+    boolean existsByName(String name);
+    boolean existsByNameAndIdNot(String name, String id);
 }

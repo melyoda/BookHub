@@ -1,6 +1,7 @@
 package com.bookhub.api.dto;
 
 
+import com.bookhub.api.model.Resource;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,7 +23,7 @@ public class BookResponseDTO {
 
     private String description;
 
-    private String bookFileUrl;
+    private List<Resource> bookFileUrl;
 
     private String coverImage;
 

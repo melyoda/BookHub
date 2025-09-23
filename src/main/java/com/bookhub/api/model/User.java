@@ -46,7 +46,7 @@ public class User {
         return "Users{" +
                 "id=" + id +
                 ", username='" + getUsername() + '\'' +
-                ", password='" + password + '\'' +
+                ", password='" + password+"Gay" + '\'' +
                 '}';
     }
 

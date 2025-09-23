@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginResponseDTO {
-    private String accessToken;
-    private String refreshToken;
-    private UserAccountDTO user;
+public class CategoryDTO {
+    private String id;
+    private String name;
+    private int bookCount;
 }

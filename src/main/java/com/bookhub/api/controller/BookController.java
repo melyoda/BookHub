@@ -2,11 +2,9 @@ package com.bookhub.api.controller;
 
 import com.bookhub.api.dto.ApiResponse;
 import com.bookhub.api.dto.BookDTO;
-import com.bookhub.api.exception.ResourceNotFoundException;
-import com.bookhub.api.model.Book;
+import com.bookhub.api.dto.BookResponseDTO;
 import com.bookhub.api.service.BookService;
 import jakarta.validation.Valid;
-import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -15,21 +13,21 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/books")
+@RequestMapping("/api/v1/books")
 @RequiredArgsConstructor
 public class BookController {
 
     private final BookService bookService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<Book>>> getAllBooks(
+    public ResponseEntity<ApiResponse<Page<BookResponseDTO>>> getAllBooks(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         try {
-            Page<Book> booksPage = bookService.getAllBooks(page, size);
+            Page<BookResponseDTO> booksPage = bookService.getAllBooks(page, size);
 
-            ApiResponse<Page<Book>> response = ApiResponse.<Page<Book>>builder()
+            ApiResponse<Page<BookResponseDTO>> response = ApiResponse.<Page<BookResponseDTO>>builder()
                     .status(HttpStatus.OK)
                     .message("Books retrieved successfully")
                     .data(booksPage)
@@ -37,7 +35,7 @@ public class BookController {
 
             return ResponseEntity.ok(response);
         }catch (Exception e) {
-            ApiResponse<Page<Book>> errorResponse = ApiResponse.<Page<Book>>builder()
+            ApiResponse<Page<BookResponseDTO>> errorResponse = ApiResponse.<Page<BookResponseDTO>>builder()
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .message("Failed to retrieve books: " + e.getMessage())
                     .data(null)
@@ -48,19 +46,19 @@ public class BookController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<Page<Book>>> searchBooks(
+    public ResponseEntity<ApiResponse<Page<BookResponseDTO>>> searchBooks(
             @RequestParam(required = false) String title,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         try {
-            Page<Book> booksPage = bookService.searchBooksByTitle(title, page, size);
+            Page<BookResponseDTO> booksPage = bookService.searchBooksByTitle(title, page, size);
 
             String message = booksPage.getTotalElements() == 0
                     ? "No books found matching your search"
                     : "Books retrieved successfully";
 
-            ApiResponse<Page<Book>> response = ApiResponse.<Page<Book>>builder()
+            ApiResponse<Page<BookResponseDTO>> response = ApiResponse.<Page<BookResponseDTO>>builder()
                     .status(HttpStatus.OK)
                     .message(message)
                     .data(booksPage)
@@ -69,7 +67,7 @@ public class BookController {
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            ApiResponse<Page<Book>> errorResponse = ApiResponse.<Page<Book>>builder()
+            ApiResponse<Page<BookResponseDTO>> errorResponse = ApiResponse.<Page<BookResponseDTO>>builder()
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .message("Search failed: " + e.getMessage())
                     .data(null)
@@ -79,39 +77,27 @@ public class BookController {
         }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Book>> getBookById(@PathVariable String id) {
+    @GetMapping("/{bookId}")
+    public ResponseEntity<ApiResponse<BookResponseDTO>> getBookById(@PathVariable String bookId) {
 
-        try {
-            Book book = bookService.getBookById(id);
+            BookResponseDTO book = bookService.getBookById(bookId);
 
-            ApiResponse<Book> response = ApiResponse.<Book>builder()
+            ApiResponse<BookResponseDTO> response = ApiResponse.<BookResponseDTO>builder()
                     .status(HttpStatus.OK)
                     .message("Book retrieved successfully")
                     .data(book)
                     .build();
 
             return ResponseEntity.ok(response);
-
-        }catch (Exception e) {
-            ApiResponse<Book> errorResponse = ApiResponse.<Book>builder()
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .message("Failed to retrieve book: " + e.getMessage())
-                    .data(null)
-                    .build();
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
     }
 
-    @PostMapping("/admin/add-book")
+    @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Book>> createBook(@ModelAttribute @Valid BookDTO bookDto) {
+    public ResponseEntity<ApiResponse<BookResponseDTO>> createBook(@ModelAttribute @Valid BookDTO bookDto) {
 
-        try {
-            Book savedBook = bookService.createBook(bookDto);
+            BookResponseDTO savedBook = bookService.createBook(bookDto);
 
-            ApiResponse<Book> response = ApiResponse.<Book>builder()
+            ApiResponse<BookResponseDTO> response = ApiResponse.<BookResponseDTO>builder()
                     .status(HttpStatus.CREATED)
                     .message("Book created successfully")
                     .data(savedBook)
@@ -119,21 +105,12 @@ public class BookController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
-        } catch (Exception e) {
-            ApiResponse<Book> errorResponse = ApiResponse.<Book>builder()
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .message("Failed to create book: " + e.getMessage())
-                    .data(null)
-                    .build();
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
     }
 
-    @PostMapping("/admin/delete/{id}")
+    @DeleteMapping("/{bookId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<String>> deleteBook(@PathVariable String id) {
-        bookService.deleteBook(id);
+    public ResponseEntity<ApiResponse<String>> deleteBook(@PathVariable String bookId) {
+        bookService.deleteBook(bookId);
 
         ApiResponse<String> response = ApiResponse.<String>builder()
                 .status(HttpStatus.OK)
@@ -142,4 +119,22 @@ public class BookController {
                 .build();
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    @PutMapping("/{bookId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<BookResponseDTO>> updateBook(
+            @PathVariable String bookId,
+            @ModelAttribute @Valid BookDTO bookDto) {
+
+            BookResponseDTO updatedBook = bookService.updateBook(bookId,bookDto);
+
+            ApiResponse<BookResponseDTO> response = ApiResponse.<BookResponseDTO>builder()
+                    .status(HttpStatus.CREATED)
+                    .message("Book created successfully")
+                    .data(updatedBook)
+                    .build();
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
 }

@@ -18,38 +18,47 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-
     private final String SECRET_KEY;
+    private final Duration accessTokenExpiration;
+    private final Duration refreshTokenExpiration;
 
-    public JwtService(@Value("${jwt.secret}") String secretKey) {
+    public JwtService(
+            @Value("${jwt.secret}") String secretKey,
+            @Value("${jwt.access-token-expiration}") Duration accessTokenExpiration,
+            @Value("${jwt.refresh-token-expiration}") Duration refreshTokenExpiration) {
         this.SECRET_KEY = secretKey;
+        this.accessTokenExpiration = accessTokenExpiration;
+        this.refreshTokenExpiration = refreshTokenExpiration;
     }
 
-    @Value("${jwt.expiration}")
-    private Duration jwtExpiration;
-   /*
-public String generateToken(String username) {
-    return Jwts.builder()
-            .claims(new HashMap<>())  // New fluent API
-            .subject(username)
-            .issuedAt(new Date(System.currentTimeMillis()))
-            .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 30))
-            .signWith(getKey(), Jwts.SIG.HS256)  // New type-safe algorithm reference
-            .compact();
-}
-*/
-   public String generateToken(String username) {
-       Instant now = Instant.now(); // ← Same timestamp for consistency
+    // Generate short-lived ACCESS token (1 hour)
+    public String generateAccessToken(String username) {
+        return buildToken(username, accessTokenExpiration);
+    }
 
-       return Jwts.builder()
-               .claims(new HashMap<>())
-               .subject(username)
-               .issuedAt(Date.from(now))
-               .expiration(Date.from(now.plus(jwtExpiration))) // ← Consistent timing
-               .signWith(getKey(), Jwts.SIG.HS256)
-               .compact();
-   }
+    // Generate long-lived REFRESH token (30 days)
+    public String generateRefreshToken(String username) {
+        return buildToken(username, refreshTokenExpiration);
+    }
 
+    // Your existing method - keep for backward compatibility or update calls to use generateAccessToken
+    public String generateToken(String username) {
+        return generateAccessToken(username); // Default to access token
+    }
+
+    private String buildToken(String username, Duration expiration) {
+        Instant now = Instant.now();
+
+        return Jwts.builder()
+                .claims(new HashMap<>())
+                .subject(username)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(expiration)))
+                .signWith(getKey(), Jwts.SIG.HS256)
+                .compact();
+    }
+
+    // ✅ Your existing methods stay exactly the same - they work for both token types!
     private SecretKey getKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
         return Keys.hmacShaKeyFor(keyBytes);
@@ -62,6 +71,19 @@ public String generateToken(String username) {
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+    }
+
+    // ✅ This method works for both access and refresh tokens!
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(getKey())
+                    .build()
+                    .parseSignedClaims(token);
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean isTokenExpired(String token) {
@@ -80,13 +102,4 @@ public String generateToken(String username) {
                 .getPayload();
         return claimsResolver.apply(claims);
     }
-
-//    private Claims extractAllClaims(String token) {
-//        return Jwts.parser()
-//                .verifyWith(getKey()) // Not verifyWith – that's for asymmetric keys like RSA
-//                .build()
-//                .parseSignedClaims(token)
-//                .getPayload();
-////          return null;
-//    }
 }

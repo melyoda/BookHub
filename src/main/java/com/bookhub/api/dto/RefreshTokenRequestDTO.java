@@ -1,5 +1,6 @@
 package com.bookhub.api.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,8 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginResponseDTO {
-    private String accessToken;
+public class RefreshTokenRequestDTO {
+    @NotBlank(message = "Refresh token is required")
     private String refreshToken;
-    private UserAccountDTO user;
 }

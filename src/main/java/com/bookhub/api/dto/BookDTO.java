@@ -21,7 +21,7 @@ public class BookDTO {
     @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     private String description;
 
-    private MultipartFile bookFile;
+    private List<MultipartFile> bookFile;
 
     private MultipartFile coverImage;
 
