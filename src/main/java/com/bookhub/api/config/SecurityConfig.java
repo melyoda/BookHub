@@ -43,6 +43,8 @@ public class SecurityConfig {
          return http
                 .csrf(AbstractHttpConfigurer::disable) // ✅ disable CSRF for stateless JWT
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/").permitAll()
+
                         .requestMatchers("/api/v1/auth/**").permitAll()// allow login/register
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
