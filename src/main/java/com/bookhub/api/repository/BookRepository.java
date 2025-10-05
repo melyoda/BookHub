@@ -29,4 +29,7 @@ public interface BookRepository extends MongoRepository<Book, String> {
     //I think this is wrongly made it should be a custom query based on which are present
     //soooooooooooooooo again TODO: fix this and make it a good boi
 //    Page<Book> findComplex(String query, String categoryId, String sort, Pageable pageable);
+
+    // This finds all books where the 'savedBy' array field contains the given userId.
+    Page<Book> findBySavedByContains(String userId, Pageable pageable);
 }

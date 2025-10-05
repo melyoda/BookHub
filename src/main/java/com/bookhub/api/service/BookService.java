@@ -217,6 +217,49 @@ public class BookService {
         return toBookResponseDTOPage(bookRepo.findComplex(query, categoryId, sort, pageable)); // (You'd need a custom repository method for this)
     }*/
 
+    /**
+     * Toggles the "saved" status for a book for the current user.
+     * @param bookId The ID of the book to save/unsave.
+     * @return true if the book is now saved, false if it is unsaved.
+     */
+    public boolean toggleSaveForBook(String bookId) {
+        User currentUser = getCurrentUser();
+        Book book = bookRepo.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with ID: " + bookId));
+
+        // Initialize the list if it's null
+        if (book.getSavedBy() == null) {
+            book.setSavedBy(new ArrayList<>());
+        }
+
+        List<String> savedByList = book.getSavedBy();
+        boolean isCurrentlySaved = savedByList.contains(currentUser.getId());
+
+        if (isCurrentlySaved) {
+            // If already saved, unsave it
+            savedByList.remove(currentUser.getId());
+        } else {
+            // If not saved, save it
+            savedByList.add(currentUser.getId());
+        }
+
+        bookRepo.save(book);
+        return !isCurrentlySaved; // Return the new state
+    }
+
+    /**
+     * Retrieves a paginated list of books saved by the current user.
+     */
+    public Page<BookResponseDTO> getSavedBooksForCurrentUser(Pageable pageable) {
+        User currentUser = getCurrentUser();
+        Page<Book> savedBooksPage = bookRepo.findBySavedByContains(currentUser.getId(), pageable);
+
+        // We can reuse your existing mapper for a Page<Book>
+        return toBookResponseDTOPage(savedBooksPage);
+    }
+
+
+//helper methods
     private User getCurrentUser() {
         UserDetails userDetails = (UserDetails) SecurityContextHolder
                 .getContext()
@@ -305,22 +348,4 @@ public class BookService {
         });
     }
 
-//    private List<Resource> saveBookFile(BookDTO bookDTO) {
-//        /// Upload resources and create embedded Resource objects
-//        List<Resource> bookResources = List.of();
-//        if (bookDTO.getBookFile() != null) {
-//            bookResources = bookDTO.getBookFile().stream()
-//                    .filter(file -> file != null && !file.isEmpty())
-//                    .map(file -> {
-//                        String url = storeResources.saveFiles(file);
-//                        ResourceType type = storeResources.determineResourceType(Objects.requireNonNull(file.getOriginalFilename()));
-//                        return Resource.builder()
-//                                .type(type)
-//                                .contentUrl(url)
-//                                .build();
-//                    })
-//                    .toList();
-//        }
-//        return bookResources;
-//    }
 }

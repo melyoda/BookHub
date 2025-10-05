@@ -1,23 +1,27 @@
 package com.bookhub.api.exception;
 
 import com.bookhub.api.dto.ApiErrorResponseDto;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @ControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiErrorResponseDto> handleResourceNotFoundException(ResourceNotFoundException exception,
                                                                                WebRequest webRequest) {
+        String path = webRequest.getDescription(false).replace("uri=", "");
+        log.warn("ResourceNotFoundException: {} for path: {}", exception.getMessage(), path);
         ApiErrorResponseDto errorResponse = ApiErrorResponseDto.builder()
                 .error(ApiErrorResponseDto.ErrorDetails.of(
                         "NOT_FOUND",
@@ -32,6 +36,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ApiErrorResponseDto> handleValidationException(ValidationException exception,
                                                                          WebRequest webRequest) {
+        String path = webRequest.getDescription(false).replace("uri=", "");
+        log.warn("ValidationException: {} for path: {}", exception.getMessage(), path);
         ApiErrorResponseDto errorResponse = ApiErrorResponseDto.builder()
                 .error(ApiErrorResponseDto.ErrorDetails.of(
                         "VALIDATION_ERROR",
@@ -46,6 +52,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiErrorResponseDto> handleDuplicateResource(DuplicateResourceException exception,
                                                                        WebRequest webRequest) {
+        String path = webRequest.getDescription(false).replace("uri=", "");
+        log.warn("DuplicateResourceException: {} for path: {}", exception.getMessage(), path);
+
         ApiErrorResponseDto errorResponse = ApiErrorResponseDto.builder()
                 .error(ApiErrorResponseDto.ErrorDetails.of(
                         "DUPLICATE_RESOURCE",
@@ -88,6 +97,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnauthorizedActionException.class)
     public ResponseEntity<ApiErrorResponseDto> handleUnauthorized(UnauthorizedActionException exception,
                                                                   WebRequest webRequest) {
+        String path = webRequest.getDescription(false).replace("uri=", "");
+        log.warn("UnauthorizedActionException: {} for path: {}", exception.getMessage(), path);
+
         ApiErrorResponseDto errorResponse = ApiErrorResponseDto.builder()
                 .error(ApiErrorResponseDto.ErrorDetails.of(
                         "UNAUTHORIZED",
@@ -102,6 +114,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(FileUploadException.class)
     public ResponseEntity<ApiErrorResponseDto> handleFileUploadException(FileUploadException exception,
                                                                          WebRequest webRequest) {
+        String path = webRequest.getDescription(false).replace("uri=", "");
+        log.error("FileUploadException: {} for path: {}", exception.getMessage(), path, exception);
+
         ApiErrorResponseDto errorResponse = ApiErrorResponseDto.builder()
                 .error(ApiErrorResponseDto.ErrorDetails.of(
                         "FILE_UPLOAD_ERROR",
@@ -115,12 +130,15 @@ public class GlobalExceptionHandler {
 
     // Handle Spring's validation errors (@Valid)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiErrorResponseDto> handleValidationErrors(MethodArgumentNotValidException ex,
+    public ResponseEntity<ApiErrorResponseDto> handleValidationErrors(MethodArgumentNotValidException exception,
                                                                       WebRequest webRequest) {
         Map<String, Object> details = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error -> {
+        exception.getBindingResult().getFieldErrors().forEach(error -> {
             details.put(error.getField(), error.getDefaultMessage());
         });
+
+        String path = webRequest.getDescription(false).replace("uri=", "");
+        log.warn("MethodArgumentNotValidException: Validation failed for path: {}. Details: {}", path, details);
 
         ApiErrorResponseDto errorResponse = ApiErrorResponseDto.builder()
                 .error(ApiErrorResponseDto.ErrorDetails.of(
@@ -136,6 +154,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<ApiErrorResponseDto> handleInvalidToken(InvalidTokenException exception) {
+        log.warn("InvalidTokenException: {}", exception.getMessage());
+
         ApiErrorResponseDto errorResponse = ApiErrorResponseDto.builder()
                 .error(ApiErrorResponseDto.ErrorDetails.of(
                         "INVALID_TOKEN",
@@ -150,6 +170,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponseDto> handleGlobalException(Exception exception,
                                                                      WebRequest webRequest) {
+        String path = webRequest.getDescription(false).replace("uri=", "");
+        log.error("Unhandled Internal Server Error for path: {}", path, exception);
+
         ApiErrorResponseDto errorResponse = ApiErrorResponseDto.builder()
                 .error(ApiErrorResponseDto.ErrorDetails.of(
                         "INTERNAL_ERROR",
@@ -159,5 +182,17 @@ public class GlobalExceptionHandler {
                 .build();
 
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponseDto> handleAccessDenied(AccessDeniedException exception, WebRequest webRequest) {
+        ApiErrorResponseDto errorResponse = ApiErrorResponseDto.builder()
+                .error(ApiErrorResponseDto.ErrorDetails.of(
+                        "ACCESS_DENIED",
+                        "You do not have permission to perform this action."
+                ))
+                .path(webRequest.getDescription(false).replace("uri=", ""))
+                .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN); // 403 Forbidden is the correct status
     }
 }

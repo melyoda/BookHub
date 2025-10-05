@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -45,4 +46,7 @@ public class Book {
     private String updatedBy;
 
     private List<String> relatedBooks; // later will add a list of books ids related to this books
+
+    @Builder.Default
+    private List<String> savedBy = new ArrayList<>();
 }
